@@ -250,7 +250,7 @@ export function confirmSaleInRoom(roomId: string): Promise<ChatRoom> {
           return room;
         });
     })
-    .then((room) => {
+    .then((_room) => {
       return fetch(`${supabaseUrl}/rest/v1/chat_rooms?id=eq.${roomId}`, {
         method: 'PATCH',
         headers: {

@@ -5,7 +5,6 @@ import { deleteProductImage } from '../lib/storage';
 import { getUserAverageRating, getUserReviews } from '../lib/reviews';
 import { getProfile } from '../lib/profiles';
 import type { Product, Review, Profile } from '../types/database.types';
-import { Button } from '../components/ui/button';
 import ProfileEditModal from '../components/ProfileEditModal';
 
 type User = {
