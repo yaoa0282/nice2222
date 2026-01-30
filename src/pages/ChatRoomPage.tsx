@@ -134,7 +134,7 @@ export default function ChatRoomPage() {
       })
       .then(rooms => {
         console.log('📦 채팅방 데이터:', rooms);
-        const roomData = rooms[0];
+        const roomData = Array.isArray(rooms) ? rooms[0] : rooms;
         if (roomData) setRoom(roomData as ChatRoom);
 
         if (roomData) {
