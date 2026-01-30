@@ -5,6 +5,7 @@ import {
   sendMessage,
   markMessagesAsRead,
   confirmSaleInRoom,
+  getConfirmedBuyerForProduct,
 } from '../lib/chat';
 import { getProduct } from '../lib/products';
 import { getProductReview } from '../lib/reviews';
@@ -24,6 +25,7 @@ export default function ChatRoomPage() {
   const [otherUserId, setOtherUserId] = useState<string>('');
   const [room, setRoom] = useState<ChatRoom | null>(null);
   const [confirmingSale, setConfirmingSale] = useState(false);
+  const [canWriteReview, setCanWriteReview] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // 디버깅: hasReviewed 상태 변경 감지
@@ -149,20 +151,25 @@ export default function ChatRoomPage() {
               const other = userId === roomData.buyer_id ? roomData.seller_id : roomData.buyer_id;
               setOtherUserId(other);
 
-              // 이 채팅방에서 판매확정된 경우에만 구매자에게 리뷰 허용
-              const isConfirmedBuyer = roomData.sale_confirmed_at && roomData.buyer_id === userId;
-              if (productData.status === 'sold' && isConfirmedBuyer) {
-                console.log('✅ 판매확정 구매자 - 리뷰 확인 중...');
-                getProductReview(roomData.product_id, userId)
-                  .then(review => {
-                    console.log('🔍 기존 리뷰:', review);
-                    setHasReviewed(!!review);
+              // 이 상품의 판매확정 구매자가 현재 사용자인지 API로 확인 (리뷰 버튼 표시용)
+              if (productData.status === 'sold') {
+                getConfirmedBuyerForProduct(roomData.product_id)
+                  .then(confirmedBuyerId => {
+                    const isBuyer = confirmedBuyerId === userId;
+                    setCanWriteReview(isBuyer);
+                    if (isBuyer) {
+                      return getProductReview(roomData.product_id, userId).then(r => {
+                        setHasReviewed(!!r);
+                      });
+                    }
+                    setHasReviewed(false);
                   })
-                  .catch(error => {
-                    console.log('❌ 리뷰 확인 실패:', error);
+                  .catch(() => {
+                    setCanWriteReview(false);
                     setHasReviewed(false);
                   });
               } else {
+                setCanWriteReview(false);
                 setHasReviewed(false);
               }
 
@@ -303,20 +310,16 @@ export default function ChatRoomPage() {
               {confirmingSale ? '처리 중...' : '✓ 판매확정'}
             </button>
           )}
-          {/* 리뷰 작성 버튼: 이 채팅에서 판매확정된 구매자만 */}
-          {(() => {
-            const isConfirmedBuyer = room?.sale_confirmed_at && room.buyer_id === currentUserId;
-            const showButton = product && product.status === 'sold' && isConfirmedBuyer && !hasReviewed;
-            return showButton ? (
-              <button
-                type="button"
-                onClick={() => setShowReviewModal(true)}
-                className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 text-sm font-semibold"
-              >
-                ⭐ 리뷰 작성
-              </button>
-            ) : null;
-          })()}
+          {/* 리뷰 작성 버튼: 이 상품의 판매확정 구매자만 (API로 확인) */}
+          {product && product.status === 'sold' && canWriteReview && !hasReviewed && (
+            <button
+              type="button"
+              onClick={() => setShowReviewModal(true)}
+              className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 text-sm font-semibold"
+            >
+              ⭐ 리뷰 작성
+            </button>
+          )}
         </div>
       </div>
 

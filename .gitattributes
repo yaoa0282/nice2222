@@ -1,1 +1,11 @@
+# 줄바꿈 통일 (LF) — CRLF 경고 방지
 * text=auto eol=lf
+
+# 바이너리로 취급
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
