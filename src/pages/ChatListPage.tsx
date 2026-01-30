@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
 import { getMyChatRooms } from '../lib/chat';
 import type { ChatRoomWithDetails } from '../types/database.types';
 
@@ -21,7 +20,6 @@ export default function ChatListPage() {
   const navigate = useNavigate();
   const [chatRooms, setChatRooms] = useState<ChatRoomWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentUserId, setCurrentUserId] = useState<string>('');
 
   useEffect(() => {
     checkAuthAndLoadChats();
@@ -55,7 +53,6 @@ export default function ChatListPage() {
       }
 
       console.log('✅ 유저 확인:', user.id);
-      setCurrentUserId(user.id);
       loadChatRooms();
     } catch (error) {
       console.error('❌ 세션 파싱 실패:', error);
@@ -101,11 +98,7 @@ export default function ChatListPage() {
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-sm divide-y">
-            {chatRooms.map((room) => {
-              const isMyProduct = room.seller_id === currentUserId;
-              const otherUserId = isMyProduct ? room.buyer_id : room.seller_id;
-
-              return (
+            {chatRooms.map((room) => (
                 <div
                   key={room.id}
                   onClick={() => navigate(`/chat/${room.id}`)}
@@ -153,8 +146,7 @@ export default function ChatListPage() {
                     </div>
                   </div>
                 </div>
-              );
-            })}
+            ))}
           </div>
         )}
       </div>

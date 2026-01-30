@@ -1,12 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
 import {
   getChatMessages,
   sendMessage,
   markMessagesAsRead,
-  subscribeToChatMessages,
-  broadcastMessage,
 } from '../lib/chat';
 import { getProduct } from '../lib/products';
 import { getProductReview } from '../lib/reviews';

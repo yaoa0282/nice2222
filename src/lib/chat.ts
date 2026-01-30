@@ -74,17 +74,20 @@ export function getMyChatRooms(): Promise<ChatRoomWithDetails[]> {
     throw new Error('로그인이 필요합니다.');
   }
   
-  let session, user, accessToken;
-  
+  type SessionShape = { user?: { id: string }; access_token?: string };
+  let user: { id: string };
+  let accessToken: string;
+
   try {
-    session = JSON.parse(sessionStr);
-    user = session?.user;
-    accessToken = session?.access_token;
-    
-    if (!user || !accessToken) {
+    const session = JSON.parse(sessionStr) as SessionShape;
+    const u = session?.user;
+    const tok = session?.access_token;
+    if (!u || !tok) {
       console.error('❌ 유저 또는 토큰 없음 (getMyChatRooms)');
       throw new Error('로그인이 필요합니다.');
     }
+    user = u;
+    accessToken = tok;
 
     console.log('📦 채팅방 목록 가져오기 시작...');
     console.log('👤 사용자 ID:', user.id);

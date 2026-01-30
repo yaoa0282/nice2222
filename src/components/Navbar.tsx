@@ -3,7 +3,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { getProfile } from '../lib/profiles';
 import { getTotalUnreadCount } from '../lib/chat';
-import { Button } from './ui/button';
 import toast from 'react-hot-toast';
 
 type User = {

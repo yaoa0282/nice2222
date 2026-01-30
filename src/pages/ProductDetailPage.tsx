@@ -4,7 +4,6 @@ import { getProduct, markProductAsSold, markProductAsActive } from '../lib/produ
 import { getOrCreateChatRoom } from '../lib/chat';
 import { getUserAverageRating } from '../lib/reviews';
 import { getProfile } from '../lib/profiles';
-import { supabase } from '../lib/supabase';
 import type { Product } from '../types/database.types';
 
 // 시간 차이를 계산하는 함수

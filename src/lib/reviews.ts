@@ -1,4 +1,3 @@
-import { supabase } from './supabase';
 import type { Review, ReviewInsert } from '../types/database.types';
 
 // 리뷰 작성 (Fetch API)

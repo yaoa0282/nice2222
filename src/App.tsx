@@ -9,6 +9,7 @@ import MyPage from './pages/MyPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import ChatListPage from './pages/ChatListPage';
 import ChatRoomPage from './pages/ChatRoomPage';
+import SeedPage from './pages/SeedPage';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
           <Route path="/product/:id" element={<ProductDetailPage />} />
           <Route path="/chat" element={<ChatListPage />} />
           <Route path="/chat/:roomId" element={<ChatRoomPage />} />
+          <Route path="/seed" element={<SeedPage />} />
         </Routes>
       </div>
     </BrowserRouter>

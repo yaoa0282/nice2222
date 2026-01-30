@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
 import { getUserProducts, deleteProduct, markProductAsSold, markProductAsActive } from '../lib/products';
 import { deleteProductImage } from '../lib/storage';
 import { getUserAverageRating, getUserReviews } from '../lib/reviews';

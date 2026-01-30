@@ -1,7 +1,5 @@
 import { useEffect, useState, memo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { searchProducts } from '../lib/products';
 import type { Product } from '../types/database.types';
 
 // 시간 차이를 계산하는 함수
@@ -140,28 +138,6 @@ const MainPage = memo(function MainPage() {
   }, [searchQuery]);
   return (
     <div className="bg-gray-50 min-h-screen">
-      {/* 플로팅 버튼들 */}
-      <div className="fixed right-4 bottom-20 flex flex-col gap-2 z-40">
-        <button className="bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm shadow-lg hover:shadow-xl transition-shadow">
-          평일상품
-        </button>
-        <button className="bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm shadow-lg hover:shadow-xl transition-shadow">
-          최근본상품
-        </button>
-        <button className="bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm shadow-lg hover:shadow-xl transition-shadow">
-          ❤️ 찜
-        </button>
-        <button className="bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm shadow-lg hover:shadow-xl transition-shadow">
-          최근 본 상품
-        </button>
-        <button className="bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm shadow-lg hover:shadow-xl transition-shadow">
-          판매내역
-        </button>
-        <button className="bg-orange-500 text-white rounded-lg px-4 py-2 text-sm font-semibold shadow-lg hover:bg-orange-600 transition-colors">
-          TOP
-        </button>
-      </div>
-
       <div className="max-w-7xl mx-auto px-4 py-8">
         {searchQuery ? (
           <div className="mb-6">
