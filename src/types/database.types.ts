@@ -28,11 +28,19 @@ export interface ProductUpdate {
   status?: 'active' | 'sold' | 'reserved';
 }
 
+export interface ProductLike {
+  id: string;
+  product_id: string;
+  user_id: string;
+  created_at: string;
+}
+
 export interface ChatRoom {
   id: string;
   product_id: string;
   buyer_id: string;
   seller_id: string;
+  sale_confirmed_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -77,6 +85,9 @@ export interface Profile {
   email: string;
   nickname: string;
   birth_date?: string;
+  avatar_url?: string;
+  bio?: string;
+  email_public?: boolean;
   created_at: string;
   updated_at: string;
 }

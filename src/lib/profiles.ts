@@ -40,7 +40,10 @@ export async function getProfiles(userIds: string[]) {
 }
 
 // 프로필 수정 (Fetch API)
-export function updateProfile(userId: string, updates: { nickname?: string; birth_date?: string }): Promise<Profile> {
+export function updateProfile(
+  userId: string,
+  updates: { nickname?: string; birth_date?: string; avatar_url?: string; bio?: string; email_public?: boolean }
+): Promise<Profile> {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
   const projectRef = supabaseUrl?.split('//')[1]?.split('.')[0];

@@ -196,6 +196,121 @@ export function getMyChatRooms(): Promise<ChatRoomWithDetails[]> {
   }
 }
 
+// 판매확정: 이 채팅방에서 구매자에게 판매 확정. 판매자만 호출 가능.
+export function confirmSaleInRoom(roomId: string): Promise<ChatRoom> {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const projectRef = supabaseUrl?.split('//')[1]?.split('.')[0];
+  const key = `sb-${projectRef}-auth-token`;
+  const sessionStr = localStorage.getItem(key);
+
+  if (!sessionStr) throw new Error('로그인이 필요합니다.');
+
+  const session = JSON.parse(sessionStr);
+  const user = session?.user;
+  const accessToken = session?.access_token;
+
+  if (!user || !accessToken) throw new Error('로그인이 필요합니다.');
+
+  const now = new Date().toISOString();
+
+  return fetch(`${supabaseUrl}/rest/v1/chat_rooms?id=eq.${roomId}`, {
+    method: 'GET',
+    headers: {
+      apikey: supabaseKey,
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+  })
+    .then((r) => r.json())
+    .then((rooms: ChatRoom[]) => {
+      const room = rooms[0];
+      if (!room) throw new Error('채팅방을 찾을 수 없습니다.');
+      if (room.seller_id !== user.id) throw new Error('판매자만 판매확정할 수 있습니다.');
+      if (room.sale_confirmed_at) throw new Error('이미 판매확정된 채팅입니다.');
+      return room;
+    })
+    .then((room) => {
+      return fetch(
+        `${supabaseUrl}/rest/v1/chat_rooms?sale_confirmed_at=not.is.null&product_id=eq.${room.product_id}`,
+        {
+          method: 'GET',
+          headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+        .then((r) => r.json())
+        .then((existing: ChatRoom[]) => {
+          if (existing && existing.length > 0) {
+            throw new Error('이 상품은 이미 다른 분에게 판매확정되었습니다.');
+          }
+          return room;
+        });
+    })
+    .then((room) => {
+      return fetch(`${supabaseUrl}/rest/v1/chat_rooms?id=eq.${roomId}`, {
+        method: 'PATCH',
+        headers: {
+          apikey: supabaseKey,
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=representation',
+        },
+        body: JSON.stringify({ sale_confirmed_at: now, updated_at: now }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          const updated = Array.isArray(data) ? data[0] : data;
+          return updated as ChatRoom;
+        });
+    })
+    .then((updatedRoom) => {
+      return fetch(`${supabaseUrl}/rest/v1/products?id=eq.${updatedRoom.product_id}`, {
+        method: 'PATCH',
+        headers: {
+          apikey: supabaseKey,
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=representation',
+        },
+        body: JSON.stringify({ status: 'sold', updated_at: now }),
+      })
+        .then((r) => r.json())
+        .then(() => updatedRoom);
+    });
+}
+
+// 상품에 대해 판매확정된 구매자 ID (리뷰 작성 권한 검증용). 없으면 null.
+export function getConfirmedBuyerForProduct(productId: string): Promise<string | null> {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const projectRef = supabaseUrl?.split('//')[1]?.split('.')[0];
+  const key = `sb-${projectRef}-auth-token`;
+  const sessionStr = localStorage.getItem(key);
+  const accessToken = sessionStr ? JSON.parse(sessionStr)?.access_token : supabaseKey;
+
+  return fetch(
+    `${supabaseUrl}/rest/v1/chat_rooms?product_id=eq.${productId}&sale_confirmed_at=not.is.null&select=buyer_id`,
+    {
+      method: 'GET',
+      headers: {
+        apikey: supabaseKey,
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  )
+    .then((r) => r.json())
+    .then((rows: { buyer_id: string }[]) => {
+      if (rows && rows.length > 0) return rows[0].buyer_id;
+      return null;
+    })
+    .catch(() => null);
+}
+
 // 채팅방 메시지 가져오기 (Fetch API)
 export function getChatMessages(roomId: string): Promise<ChatMessage[]> {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;

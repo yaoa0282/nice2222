@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getProduct, markProductAsSold, markProductAsActive } from '../lib/products';
 import { getOrCreateChatRoom } from '../lib/chat';
 import { getUserAverageRating } from '../lib/reviews';
 import { getProfile } from '../lib/profiles';
+import { getLikeCount, hasUserLiked, toggleProductLike } from '../lib/likes';
 import type { Product } from '../types/database.types';
+import { Heart } from 'lucide-react';
 
 // 시간 차이를 계산하는 함수
 function getTimeAgo(dateString: string) {
@@ -28,6 +30,10 @@ export default function ProductDetailPage() {
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [sellerRating, setSellerRating] = useState({ average: 0, count: 0 });
   const [sellerNickname, setSellerNickname] = useState<string>('');
+  const [likeCount, setLikeCount] = useState(0);
+  const [hasLiked, setHasLiked] = useState(false);
+  const [heartAnimating, setHeartAnimating] = useState(false);
+  const [likeLoading, setLikeLoading] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -49,15 +55,16 @@ export default function ProductDetailPage() {
         .then(data => {
           setProduct(data);
 
-          // 판매자 평점 가져오기
           getUserAverageRating(data.user_id)
             .then(rating => setSellerRating(rating))
             .catch(error => console.error('평점 로딩 실패:', error));
 
-          // 판매자 닉네임 가져오기
           getProfile(data.user_id)
             .then(sellerProfile => setSellerNickname(sellerProfile?.nickname || '판매자'))
             .catch(error => console.error('프로필 로딩 실패:', error));
+
+          getLikeCount(id).then(setLikeCount).catch(() => setLikeCount(0));
+          hasUserLiked(id, user?.id ?? null).then(setHasLiked).catch(() => setHasLiked(false));
 
           setLoading(false);
         })
@@ -110,6 +117,29 @@ export default function ProductDetailPage() {
         alert(error.message || '채팅방 생성에 실패했습니다.');
       });
   };
+
+  const handleHeartClick = useCallback(() => {
+    if (!product) return;
+    if (!currentUserId) {
+      navigate('/login');
+      return;
+    }
+    if (likeLoading) return;
+    setLikeLoading(true);
+    setHeartAnimating(true);
+    toggleProductLike(product.id)
+      .then((liked) => {
+        setHasLiked(liked);
+        setLikeCount((c) => (liked ? c + 1 : c - 1));
+        setTimeout(() => setHeartAnimating(false), 350);
+      })
+      .catch((err) => {
+        if (err?.message === '로그인이 필요합니다.') navigate('/login');
+        else alert(err?.message ?? '찜 처리에 실패했습니다.');
+        setHeartAnimating(false);
+      })
+      .finally(() => setLikeLoading(false));
+  }, [product, currentUserId, likeLoading, navigate]);
 
   const handleToggleStatus = () => {
     if (!product) return;
@@ -175,9 +205,29 @@ export default function ProductDetailPage() {
                   <p className="text-4xl font-bold text-orange-500 mb-2">
                     {product.price.toLocaleString()}원
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 mb-3">
                     {getTimeAgo(product.created_at)} · {product.location}
                   </p>
+                  {/* 찜 버튼 + 숫자 */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleHeartClick}
+                      disabled={likeLoading}
+                      className="p-1.5 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                      aria-label={hasLiked ? '찜 해제' : '찜하기'}
+                    >
+                      <Heart
+                        className={`w-7 h-7 ${heartAnimating ? 'animate-heart-pop' : ''} ${
+                          hasLiked ? 'fill-red-500 text-red-500' : 'fill-none text-gray-400'
+                        }`}
+                        strokeWidth={2}
+                      />
+                    </button>
+                    <span className="text-sm text-gray-600">
+                      {likeCount}명이 좋아합니다
+                    </span>
+                  </div>
                 </div>
 
                 {/* 판매자 정보 */}

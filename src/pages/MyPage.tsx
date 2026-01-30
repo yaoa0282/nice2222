@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { getUserProducts, deleteProduct, markProductAsSold, markProductAsActive } from '../lib/products';
 import { deleteProductImage } from '../lib/storage';
 import { getUserAverageRating, getUserReviews } from '../lib/reviews';
-import { getProfile, updateProfile } from '../lib/profiles';
+import { getProfile } from '../lib/profiles';
 import type { Product, Review, Profile } from '../types/database.types';
 import { Button } from '../components/ui/button';
+import ProfileEditModal from '../components/ProfileEditModal';
 
 type User = {
   id: string;
@@ -71,9 +72,6 @@ export default function MyPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'active' | 'sold' | 'reviews'>('active');
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editNickname, setEditNickname] = useState('');
-  const [editBirthDate, setEditBirthDate] = useState('');
-  const [editLoading, setEditLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -188,37 +186,6 @@ export default function MyPage() {
       });
   };
 
-  const handleOpenEditModal = () => {
-    setEditNickname(profile?.nickname || '');
-    setEditBirthDate(profile?.birth_date || '');
-    setShowEditModal(true);
-  };
-
-  const handleSaveProfile = () => {
-    if (!user || !editNickname.trim()) {
-      alert('닉네임을 입력해주세요.');
-      return;
-    }
-
-    setEditLoading(true);
-
-    updateProfile(user.id, {
-      nickname: editNickname.trim(),
-      birth_date: editBirthDate || undefined,
-    })
-      .then(updatedProfile => {
-        setProfile(updatedProfile);
-        setShowEditModal(false);
-        alert('프로필이 수정되었습니다!');
-      })
-      .catch(error => {
-        console.error('프로필 수정 실패:', error);
-        alert(error.message || '프로필 수정에 실패했습니다.');
-      })
-      .finally(() => {
-        setEditLoading(false);
-      });
-  };
 
   if (loading) {
     return (
@@ -236,20 +203,32 @@ export default function MyPage() {
         {/* 프로필 카드 */}
         <div className="bg-white p-6 rounded-lg shadow-md mb-6">
           <div className="flex items-center gap-6">
-            <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center text-4xl">
-              👤
+            <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+              {profile?.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt={profile.nickname}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-4xl">👤</span>
+              )}
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <h2 className="text-xl font-semibold mb-2">{profile?.nickname}</h2>
-              <div className="flex gap-4 text-sm text-gray-600">
-                <span>{profile?.email}</span>
-                <span>•</span>
+              {profile?.bio && (
+                <p className="text-sm text-gray-600 mb-2 line-clamp-2">{profile.bio}</p>
+              )}
+              <div className="flex gap-4 text-sm text-gray-600 flex-wrap">
+                {profile?.email_public !== false && <span>{profile?.email}</span>}
+                {profile?.email_public !== false && <span>•</span>}
                 <span>가입일: {profile?.created_at ? new Date(profile.created_at).toLocaleDateString('ko-KR') : '-'}</span>
               </div>
             </div>
-            <button 
-              onClick={handleOpenEditModal}
-              className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+            <button
+              type="button"
+              onClick={() => setShowEditModal(true)}
+              className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex-shrink-0"
             >
               프로필 수정
             </button>
@@ -423,60 +402,12 @@ export default function MyPage() {
         </div>
       </div>
 
-      {/* 프로필 수정 모달 */}
-      {showEditModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h2 className="text-2xl font-bold mb-6">프로필 수정</h2>
-
-            <form onSubmit={(e) => { e.preventDefault(); handleSaveProfile(); }} className="space-y-4">
-              {/* 닉네임 */}
-              <div>
-                <label className="block text-sm font-medium mb-2">닉네임 *</label>
-                <input
-                  type="text"
-                  value={editNickname}
-                  onChange={(e) => setEditNickname(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  placeholder="닉네임을 입력하세요"
-                  required
-                />
-              </div>
-
-              {/* 생년월일 */}
-              <div>
-                <label className="block text-sm font-medium mb-2">생년월일 (선택)</label>
-                <input
-                  type="date"
-                  value={editBirthDate}
-                  onChange={(e) => setEditBirthDate(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-              </div>
-
-              {/* 버튼 */}
-              <div className="flex gap-4 mt-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => setShowEditModal(false)}
-                  disabled={editLoading}
-                >
-                  취소
-                </Button>
-                <Button
-                  type="submit"
-                  className="flex-1 bg-orange-500 hover:bg-orange-600"
-                  disabled={editLoading}
-                >
-                  {editLoading ? '저장 중...' : '저장'}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <ProfileEditModal
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        profile={profile}
+        userId={user?.id ?? ''}
+      />
     </div>
   );
 }

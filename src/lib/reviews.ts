@@ -1,30 +1,32 @@
+import { getConfirmedBuyerForProduct } from './chat';
 import type { Review, ReviewInsert } from '../types/database.types';
 
-// 리뷰 작성 (Fetch API)
+// 리뷰 작성 (Fetch API) — 판매확정된 구매자만 작성 가능
 export function createReview(review: ReviewInsert): Promise<Review> {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
   const projectRef = supabaseUrl?.split('//')[1]?.split('.')[0];
   const key = `sb-${projectRef}-auth-token`;
   const sessionStr = localStorage.getItem(key);
-  
+
   if (!sessionStr) throw new Error('로그인이 필요합니다.');
-  
+
   const session = JSON.parse(sessionStr);
   const user = session?.user;
   const accessToken = session?.access_token;
-  
+
   if (!user || !accessToken) throw new Error('로그인이 필요합니다.');
-  
-  // 판매자는 자신의 상품에 리뷰를 작성할 수 없음
+
   if (review.seller_id && user.id === review.seller_id) {
     throw new Error('판매자는 자신의 판매글에 리뷰를 작성할 수 없습니다.');
   }
 
-  // seller_id는 검증용이므로 실제 DB에 저장하지 않음
-  const { seller_id, ...reviewData } = review;
-
-  return fetch(`${supabaseUrl}/rest/v1/reviews`, {
+  return getConfirmedBuyerForProduct(review.product_id).then((confirmedBuyerId) => {
+    if (confirmedBuyerId !== user.id) {
+      throw new Error('이 상품은 판매확정된 구매자만 리뷰를 작성할 수 있습니다.');
+    }
+    const { seller_id, ...reviewData } = review;
+    return fetch(`${supabaseUrl}/rest/v1/reviews`, {
     method: 'POST',
     headers: {
       'apikey': supabaseKey,
@@ -37,12 +39,13 @@ export function createReview(review: ReviewInsert): Promise<Review> {
       reviewer_id: user.id,
     }),
   })
-    .then(response => response.json())
-    .then(data => {
-      const review = Array.isArray(data) ? data[0] : data;
-      console.log('✅ 리뷰 작성 완료:', review);
-      return review as Review;
+    .then((response) => response.json())
+    .then((data) => {
+      const created = Array.isArray(data) ? data[0] : data;
+      console.log('✅ 리뷰 작성 완료:', created);
+      return created as Review;
     });
+  });
 }
 
 // 특정 사용자가 받은 리뷰 가져오기 (Fetch API)
